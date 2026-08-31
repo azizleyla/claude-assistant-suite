@@ -141,8 +141,9 @@ lib/
 npm run dev     # dev server (localhost:3000)
 npm run build   # production build
 npm run start   # production serveri
-npm run lint    # ESLint
 ```
+
+> **Qeyd:** `eslint` və `eslint-config-next` dev asılılıqları müvəqqəti olaraq çıxarılıb, çünki onların bir transitive asılılığının xarab versiya metadata-sı `npm install`-ı (o cümlədən Vercel-də) çökdürürdü. Upstream düzələndə geri qaytarıla bilər.
 
 ---
 
