@@ -36,23 +36,42 @@ async function findRelevantChunks(question: string, topN = 3) {
 }
 
 export async function POST(request: Request) {
-  const { messages } = await request.json();
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return Response.json(
+      { error: "ANTHROPIC_API_KEY təyin olunmayıb (server konfiqurasiyası)." },
+      { status: 500 },
+    );
+  }
+  try {
+    const { messages } = await request.json();
 
-  const lastUserMessage = messages[messages.length - 1].content;
-  const relevantChunks = await findRelevantChunks(lastUserMessage);
+    const lastUserMessage = messages[messages.length - 1].content;
+    const relevantChunks = await findRelevantChunks(lastUserMessage);
 
-  const context = relevantChunks.map((c) => c.text).join("\n\n---\n\n");
+    if (relevantChunks.length === 0) {
+      return Response.json({
+        reply: "Əvvəlcə bir PDF sənəd yüklə — hazırda yaddaşda sənəd yoxdur.",
+      });
+    }
 
-  const systemPrompt = `Sən köməkçi bir AI assistentsən. İstifadəçinin sualına, aşağıda verilən sənəd hissələrinə ƏSASLANARAQ cavab ver. Əgər cavab bu hissələrdə yoxdursa, "Bu barədə sənəddə məlumat tapmadım" de.
+    const context = relevantChunks.map((c) => c.text).join("\n\n---\n\n");
+
+    const systemPrompt = `Sən köməkçi bir AI assistentsən. İstifadəçinin sualına, aşağıda verilən sənəd hissələrinə ƏSASLANARAQ cavab ver. Əgər cavab bu hissələrdə yoxdursa, "Bu barədə sənəddə məlumat tapmadım" de.
 
 SƏNƏD HİSSƏLƏRİ:
 ${context}`;
-  const response = await askClaude(messages, systemPrompt);
+    const response = await askClaude(messages, systemPrompt);
 
-  if (response.type === "error") {
-    return Response.json({ error: response.error.message }, { status: 400 });
+    if (response.type === "error") {
+      return Response.json({ error: response.error?.message ?? "Claude API xətası" }, { status: 502 });
+    }
+
+    const textBlock = response.content?.find((block: any) => block.type === "text");
+    return Response.json({ reply: textBlock?.text ?? "(cavab yoxdur)" });
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof Error ? err.message : "Naməlum server xətası" },
+      { status: 500 },
+    );
   }
-
-  const textBlock = response.content.find((block: any) => block.type === "text");
-  return Response.json({ reply: textBlock.text });
 }

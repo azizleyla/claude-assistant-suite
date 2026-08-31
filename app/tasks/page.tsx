@@ -31,7 +31,13 @@ export default function TasksPage() {
         body: JSON.stringify({ messages: newMessages }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data) {
+        setError(`Server xətası (${response.status}). Environment variable-lar (ANTHROPIC_API_KEY) təyin olunubmu?`);
+        setLoading(false);
+        return;
+      }
 
       if (data.error) {
         setError('Xəta: ' + data.error);

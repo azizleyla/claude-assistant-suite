@@ -97,29 +97,45 @@ function executeTool(name: string, input: any) {
   }
 }
 export async function POST(request: Request) {
-  const { messages } = await request.json();
-  let response = await askClaude(messages); //
-  if (response.stop_reason === "tool_use") {
-    const toolUseBlock = response.content.find(
-      (block: any) => block.type === "tool_use",
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return Response.json(
+      { error: "ANTHROPIC_API_KEY təyin olunmayıb (server konfiqurasiyası)." },
+      { status: 500 },
     );
-    const toolsResult = executeTool(toolUseBlock.name, toolUseBlock.input);
-    const messageWithTools = [
-      ...messages,
-      { role: "assistant", content: response.content },
-      {
-        role: "user",
-        content: [
-          {
-            tool_use_id: toolUseBlock.id,
-            type: "tool_result",
-            content: toolsResult,
-          },
-        ],
-      },
-    ];
-    response = await askClaude(messageWithTools);
   }
-  const textBlock = response.content.find((block: any) => block.type === "text");
-  return Response.json({ reply: textBlock.text });
+  try {
+    const { messages } = await request.json();
+    let response = await askClaude(messages); //
+    if (response.type === "error") {
+      return Response.json({ error: response.error?.message ?? "Claude API xətası" }, { status: 502 });
+    }
+    if (response.stop_reason === "tool_use") {
+      const toolUseBlock = response.content.find(
+        (block: any) => block.type === "tool_use",
+      );
+      const toolsResult = executeTool(toolUseBlock.name, toolUseBlock.input);
+      const messageWithTools = [
+        ...messages,
+        { role: "assistant", content: response.content },
+        {
+          role: "user",
+          content: [
+            {
+              tool_use_id: toolUseBlock.id,
+              type: "tool_result",
+              content: toolsResult,
+            },
+          ],
+        },
+      ];
+      response = await askClaude(messageWithTools);
+    }
+    const textBlock = response.content?.find((block: any) => block.type === "text");
+    return Response.json({ reply: textBlock?.text ?? "(cavab yoxdur)" });
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof Error ? err.message : "Naməlum server xətası" },
+      { status: 500 },
+    );
+  }
 }
