@@ -67,8 +67,6 @@ async function askClaude(messages: any[]) {
   });
 
   const data = await response.json();
-  console.log("askClaude status:", response.status);
-  console.log("askClaude response:", JSON.stringify(data, null, 2));
   return data;
 }
 
@@ -86,10 +84,7 @@ export async function POST(request: Request) {
   const { messages } = await request.json();
   let response = await askClaude(messages);
   //stop_reason
-  console.log("stop_reason:", response.stop_reason);
-  console.log("has content?", Array.isArray(response.content));
   if (response.stop_reason === "tool_use") {
-    console.log("runn");
     const toolUseBlock = response.content.find(
       (block: any) => block.type === "tool_use",
     );
@@ -100,7 +95,6 @@ export async function POST(request: Request) {
         toolUseBlock.input.longitude,
       );
     }
-    console.log(toolUseBlock, "tl");
     const messagesWithToolUse = [
       ...messages,
       { role: "assistant", content: response.content },
@@ -117,10 +111,6 @@ export async function POST(request: Request) {
     ];
     response = await askClaude(messagesWithToolUse);
   }
-  console.log(
-    "final response.content:",
-    JSON.stringify(response.content, null, 2),
-  );
   const textBlock = response.content.find((block: any) => block.type === "text");
   return Response.json({ reply: textBlock.text });
 }

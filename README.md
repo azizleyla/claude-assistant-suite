@@ -1,13 +1,15 @@
 # Claude Next.js Playground — Tapşırıq Köməkçisi & Sənəd Köməkçisi
 
-Next.js (App Router) üzərində qurulmuş, **Claude API** ilə işləyən iki ayrı tətbiq nümunəsi:
+Next.js (App Router) üzərində qurulmuş, **Claude API** ilə işləyən üç ayrı tətbiq nümunəsi:
 
 | Tətbiq | Yol | Nə göstərir |
 |--------|-----|-------------|
-| 🛠️ **Tapşırıq Köməkçisi** | `/` | **Tool Use** (function calling) — Claude təbii dildən todo əlavə edir, göstərir və silir |
+| 🏠 **Giriş (Landing)** | `/` | Üç tətbiqi təqdim edən başlanğıc səhifəsi |
+| 🛠️ **Tapşırıq Köməkçisi** | `/tasks` | **Tool Use** (function calling) — Claude təbii dildən todo əlavə edir, göstərir və silir |
 | 📄 **Sənəd Köməkçisi** | `/document` | **RAG** (Retrieval-Augmented Generation) — PDF yüklə, məzmunu haqqında sual ver |
+| ⛅ **Hava Köməkçisi** | `/weather` | **Tool Use** — Claude `get_weather` alətini çağırıb real hava məlumatı gətirir |
 
-Hər iki tətbiq arasında yuxarıdakı tab (switcher) ilə keçid edilir.
+Tətbiqlər arasında yuxarıdakı tab (switcher) ilə keçid edilir.
 
 ---
 
@@ -77,7 +79,14 @@ Mövcud alətlər (`app/api/todo/route.ts`):
    → Claude yekun cavabı yazır
 ```
 
-> Əlavə nümunə: `app/api/weather/route.ts` — eyni tool-use nümunəsi, amma **hava** aləti (`get_weather`, Open-Meteo API) ilə.
+---
+
+## ⛅ Hava Köməkçisi (Tool Use)
+
+Şəhər adı yazırsan, Claude həmin şəhərin koordinatını özü hesablayıb `get_weather` alətini çağırır, alət isə [Open-Meteo API](https://open-meteo.com)-dən real havanı gətirir.
+
+- Endpoint: `app/api/weather/route.ts` (`get_weather` aləti)
+- UI (`app/weather/page.tsx`): şəhər axtarışı → cavab mətninə görə seçilən hava ikonu ilə nəticə kartı
 
 ---
 
@@ -107,13 +116,15 @@ Köməkçi funksiyalar `lib/embeddings.ts`-dədir: `chunkText`, `getEmbeddings`,
 
 ```
 app/
-├─ page.tsx              # 🛠️ Tapşırıq Köməkçisi (UI)
+├─ page.tsx              # 🏠 Giriş (landing) — 3 tətbiq kartı
+├─ tasks/page.tsx        # 🛠️ Tapşırıq Köməkçisi (UI)
 ├─ document/page.tsx     # 📄 Sənəd Köməkçisi (UI)
+├─ weather/page.tsx      # ⛅ Hava Köməkçisi (UI)
 ├─ components/
-│  └─ AppSwitcher.tsx    # İki tətbiq arası tab keçidi
+│  └─ AppSwitcher.tsx    # tətbiqlər arası tab keçidi
 └─ api/
    ├─ todo/route.ts      # Tool Use — todo alətləri
-   ├─ weather/route.ts   # Tool Use — hava aləti (əlavə nümunə)
+   ├─ weather/route.ts   # Tool Use — hava aləti (get_weather)
    ├─ upload/route.ts    # RAG — PDF yüklə & embedding
    └─ ask/route.ts       # RAG — sual üzrə axtarış & cavab
 lib/
